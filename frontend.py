@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from main import main
 
 
 st.title("ChatPDF")
@@ -43,6 +44,7 @@ if st.button("Submit"):
         answer=f"\"This is a placeholder answer\""
         
         #this will update the consersation in session state
-        st.session_state.conversation+=f"You: {question}\nChatPDF: {answer}\n\n"
+        st.session_state.conversation+=f"You: {question}\nChatPDF: {main(question,file_path)}\n\n"
         
         st.rerun()
+        
