@@ -10,7 +10,7 @@ import os
 
 pdf_path = askopenfilename(filetypes=[("PDF files", "*.pdf")])
 
-def load_documents():
+def load_documents(pdf_path):
     loader=PyPDFLoader(pdf_path)
     return loader.load()
 
@@ -71,7 +71,8 @@ while True:
     if choice==1:
         question=input("Ask me anything about your document: ")
         try:
-            result = qa_chain.invoke({"query": question})
+            result = qa_chain.invoke({"query": question,
+                                      "context": "context"})
             print(result.get("result", "No result found."))
             print("\n \n \n")
         except Exception as e:
