@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from main import main
+from main import main,response_generator
 
 
 st.title("ChatPDF")
@@ -24,27 +24,25 @@ if uploaded_file is not None:
         f.write(uploaded_file.getbuffer())
         
 
-if "conversation" not in st.session_state:
-    st.session_state.conversation="ChatPDF: Hello, how can I help you?\n"
+if "conversations" not in st.session_state:
+    st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
 
-st.markdown(
-    f"""
-    <h5>Chat</h5>
-    <div style="background-color: black; color: white; padding: 10px; border-radius: 5px; height: 500px; overflow-y: auto;">
-         {st.session_state.conversation.replace('\n', '<br>')}
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+for conversation in st.session_state.conversations:
+    with st.chat_message(conversation['role']):
+        st.markdown(conversation['content'])
 
-question=st.text_area("Ask away",placeholder="What do you want to know about the PDF",key="key_interaction")
+question=st.chat_input("Say something")
 
-if st.button("Submit"):
-    if question:
-        answer=f"\"This is a placeholder answer\""
-        
-        #this will update the consersation in session state
-        st.session_state.conversation+=f"You: {question}\nChatPDF: {main(question,file_path)}\n\n"
-        
-        st.rerun()
-        
+if question:
+    #this will update the consersation in session state
+    st.session_state.conversations.append({"role":"user","content": question})
+    st.chat_message("user").markdown(question)
+    
+    response=main(question,file_path)
+    
+    st.session_state.conversations.append({"role":"assistant","content": response})
+    st.chat_message("assistant").write_stream(response_generator(response))
+    st.rerun()
+
+
+

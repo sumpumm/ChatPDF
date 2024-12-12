@@ -1,14 +1,13 @@
-from tkinter.filedialog import askopenfilename
 from langchain_community.document_loaders import PyPDFLoader
+#pymupdf
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
-import os
+import os,time
 
-# pdf_path = askopenfilename(filetypes=[("PDF files", "*.pdf")])
 
 def load_documents(pdf_path):
     loader=PyPDFLoader(pdf_path)
@@ -21,6 +20,12 @@ def split(document):
     chunks=splitter_object.split_documents(document)
     
     return chunks
+
+def response_generator(response):
+    for word in response.split():
+        yield word + " "
+        time.sleep(0.05)
+        
    
 def main(question,file_path):
     chunks=split(load_documents(file_path))
