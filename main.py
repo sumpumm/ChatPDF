@@ -1,12 +1,13 @@
 from langchain_community.document_loaders import PyPDFLoader
-#pymupdf
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_ollama import OllamaLLM
-from langchain.prompts import PromptTemplate
+from prompt import llm_prompt
 import os,time
+import uuid
+from langchain.docstore.document import Document
 
 
 def load_documents(pdf_path):
@@ -38,39 +39,47 @@ def main(question,file_path):
         persist_directory="./chroma_langchain_db",
         embedding_function=embeddings,
        collection_name=collection_name 
-    )   
+    )  
+     
+    for chunk in chunks:
+        chunk_id = str(uuid.uuid4()) 
+        page_number = chunk.metadata.get('page')  
+        chunk_metadata = {
+            "page_number": page_number,
+            "source": file_path
+        }
+        
+        document = Document(
+            page_content=chunk.page_content,  # The text chunk
+            metadata=chunk.metadata,          # The metadata for the chunk
+            id=chunk_id                       # The unique ID for the chunk
+        )
+        # Add chunk to the database with metadata
+        db.add_documents([document])
 
-
-    db.add_documents(chunks)
-   
 
     llm=OllamaLLM(model="llama3")
-    template = """
-    You are an intelligent assistant tasked with finding the most relevant data from a document database. The database stores PDF content in a vectorized format for efficient search and retrieval. Use the following query to fetch the required information:
+    
+ 
+    #similarity seach
+    results=db.similarity_search_with_score(question,k=2)
+    context_text = "\n\n---\n\n".join(doc.page_content for doc, _score in results)
+    sources=[doc.metadata for doc,_score in results]
 
-    Context: {context}
-
-    Query: {question}
-
-    Answer: 
-    """
-
-    prompt=PromptTemplate.from_template(template)
-
-   
+    prompt= llm_prompt()
     qa_chain=RetrievalQA.from_chain_type(
-    llm=llm,
-    retriever=db.as_retriever(),
-    chain_type_kwargs={
-        "prompt": prompt,
-    }
+                llm=llm,
+                retriever=db.as_retriever(),chain_type_kwargs={
+                "prompt": prompt,
+                 }
     )
 
-    # question=input("Ask me anything about your document: ")
+    
     try:
         result = qa_chain.invoke({"query": question,
-                                          "context": "context"})
-        return(result.get("result", "No result found."))
+                                "context": context_text})
+        result=result.get("result", "No result found.")
+        return (f"{result} \n\n Sources: {sources}")
         
     except Exception as e:
         return(f"Error occurred: {e}")

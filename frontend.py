@@ -6,13 +6,13 @@ from main import main,response_generator
 st.title("ChatPDF")
 st.header("Your online Ai assistance")
 st.sidebar.header("""
-                  Hello,Welcome to chatPDF!
-                  How may I help you?
+                  ChatPDF!
+                  A platform to interact with your PDF files 
                   """)
 
 
 # WOrking with files
-uploaded_file=st.file_uploader("Upload your pdf file here",type="pdf")
+uploaded_file=st.sidebar.file_uploader("Upload your pdf file here",type="pdf")
 save_directory="uploaded_PDFs"
 
 if uploaded_file is not None:
@@ -22,8 +22,6 @@ if uploaded_file is not None:
     #this saves the file
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-        
-
 if "conversations" not in st.session_state:
     st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
 
