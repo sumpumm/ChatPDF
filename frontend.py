@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from pypdf import PdfWriter,PdfReader
 from main import main,response_generator
 
 
@@ -12,16 +13,32 @@ st.sidebar.header("""
 
 
 # WOrking with files
-uploaded_file=st.sidebar.file_uploader("Upload your pdf file here",type="pdf")
+uploaded_files=st.sidebar.file_uploader("Upload your pdf file here",accept_multiple_files=True,type="pdf")
 save_directory="uploaded_PDFs"
+merged_file_name="merged_output"
 
-if uploaded_file is not None:
-    os.makedirs(save_directory,exist_ok=True) 
-    file_path=os.path.join(save_directory,uploaded_file.name)
-    
-    #this saves the file
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+if uploaded_files:
+    if(len(uploaded_files)>1):
+        #logic for multiple files handling
+        writer=PdfWriter()
+        for uploaded_file in uploaded_files:
+            reader=PdfReader(uploaded_file)
+            for page in reader.pages:
+                writer.add_page(page)
+            merged_file_name+="_"+ uploaded_file.name.split('.')[0]
+        file_path = os.path.join(save_directory, merged_file_name + ".pdf")
+        
+        with open(file_path, "wb") as output_file:
+            writer.write(output_file)
+            
+    else:
+        os.makedirs(save_directory,exist_ok=True) 
+        file_path=os.path.join(save_directory,uploaded_files[0].name)
+        #this saves the file
+        with open(file_path, "wb") as f:
+            f.write(uploaded_files[0].getbuffer())
+
+            
 if "conversations" not in st.session_state:
     st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
 
