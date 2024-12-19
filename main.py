@@ -8,6 +8,8 @@ from prompt import llm_prompt
 import os,time
 import uuid
 from langchain.docstore.document import Document
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import LLMChain
 
 
 def load_documents(pdf_path):
@@ -26,9 +28,9 @@ def response_generator(response):
     for word in response.split():
         yield word + " "
         time.sleep(0.05)
-        
+
    
-def main(question,file_path):
+def main(question,file_path,memory):
     chunks=split(load_documents(file_path))
 
     embeddings=OllamaEmbeddings(model="nomic-embed-text")
@@ -60,27 +62,32 @@ def main(question,file_path):
 
     llm=OllamaLLM(model="llama3")
     
- 
     #similarity seach
     results=db.similarity_search_with_score(question,k=2)
     context_text = "\n\n---\n\n".join(doc.page_content for doc, _score in results)
     sources=[doc.metadata for doc,_score in results]
 
-    prompt= llm_prompt()
-    qa_chain=RetrievalQA.from_chain_type(
-                llm=llm,
-                retriever=db.as_retriever(),chain_type_kwargs={
-                "prompt": prompt,
-                 }
+    
+    prompt= llm_prompt(context_text)
+    
+    conversation_chain=LLMChain(
+                                llm=llm,
+                                prompt=prompt,
+                                memory=memory,
+                                
+                                
     )
 
-    
     try:
-        result = qa_chain.invoke({"query": question,
-                                "context": context_text})
-        result=result.get("result", "No result found.")
-        return (f"{result} \n\n Sources: {sources}")
+        output=conversation_chain.invoke({"question": question})
+        
+        return (f"{output["chat_history"][-1].content } \n\n Sources: {sources}")
         
     except Exception as e:
         return(f"Error occurred: {e}")
+      
+
+
+     
+      
       

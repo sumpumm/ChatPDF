@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from pypdf import PdfWriter,PdfReader
 from main import main,response_generator
+from langchain.memory import ConversationBufferMemory
 
 
 st.title("ChatPDF")
@@ -42,22 +43,34 @@ if uploaded_files:
 if "conversations" not in st.session_state:
     st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
 
+if "chat_memory" not in st.session_state:
+        st.session_state.chat_memory = ConversationBufferMemory(
+            memory_key="chat_history", return_messages=True
+        )
+
+# Access the memory from session state
+memory = st.session_state.chat_memory
+
 for conversation in st.session_state.conversations:
     with st.chat_message(conversation['role']):
         st.markdown(conversation['content'])
 
 question=st.chat_input("Say something")
 
+
 if question:
     #this will update the consersation in session state
     st.session_state.conversations.append({"role":"user","content": question})
     st.chat_message("user").markdown(question)
     
-    response=main(question,file_path)
+    
+    response=main(question,file_path,memory)
     
     st.session_state.conversations.append({"role":"assistant","content": response})
     st.chat_message("assistant").write_stream(response_generator(response))
     st.rerun()
+ 
+    
 
 
 
