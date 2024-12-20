@@ -2,13 +2,11 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
-from langchain.chains import RetrievalQA
 from langchain_ollama import OllamaLLM
 from prompt import llm_prompt
 import os,time
 import uuid
 from langchain.docstore.document import Document
-from langchain.memory import ConversationBufferMemory
 from langchain.chains import LLMChain
 
 
