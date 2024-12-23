@@ -3,6 +3,10 @@ import os
 from pypdf import PdfWriter,PdfReader
 from my_llm import RAG,response_generator
 from langchain.memory import ConversationBufferMemory
+import secrets
+from langchain_community.chat_message_histories import (
+    PostgresChatMessageHistory,
+)
 
 
 st.title("ChatPDF")
@@ -39,9 +43,22 @@ if uploaded_files:
         with open(file_path, "wb") as f:
             f.write(uploaded_files[0].getbuffer())
 
-            
+
+if "session_id" not in st.session_state:
+    st.session_state.session_id=secrets.token_hex(16)
+    
+
+
+if "postgres_chat" not in st.session_state:
+    st.session_state.postgres_chat=PostgresChatMessageHistory(
+    connection_string="postgresql://postgres:sumpumm@localhost/chat_history",
+    session_id=st.session_state.session_id,)
+
+history=st.session_state.postgres_chat
+         
 if "conversations" not in st.session_state:
     st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
+    history.add_ai_message("Hello, how may I help you today?")
 
 if "chat_memory" not in st.session_state:
         st.session_state.chat_memory = ConversationBufferMemory(
@@ -62,14 +79,15 @@ if question:
     #this will update the consersation in session state
     st.session_state.conversations.append({"role":"user","content": question})
     st.chat_message("user").markdown(question)
+    history.add_user_message(question)
     
     
     response=RAG(question,file_path,memory)
     
     st.session_state.conversations.append({"role":"assistant","content": response})
     st.chat_message("assistant").write_stream(response_generator(response))
-    st.rerun()
- 
+    history.add_ai_message(response)
+    
     
 
 

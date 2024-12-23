@@ -18,3 +18,4 @@ async def upload_pdf_endpoint(file: UploadFile=File(...)):
         
     else:
         return {"error":"file must be pdf"}    
+
