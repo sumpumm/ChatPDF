@@ -27,20 +27,21 @@ def response_generator(response):
         yield word + " "
         time.sleep(0.05)
 
-   
-def main(question,file_path,memory):
-    chunks=split(load_documents(file_path))
 
+def init_db(file_path):
     embeddings=OllamaEmbeddings(model="nomic-embed-text")
 
     collection_name=os.path.basename(file_path)
 
-    db=Chroma(
+    return Chroma(
         persist_directory="./chroma_langchain_db",
         embedding_function=embeddings,
        collection_name=collection_name 
-    )  
-     
+    ) 
+
+    
+def add_docs(file_path,chunks):
+    db=init_db(file_path)
     for chunk in chunks:
         chunk_id = str(uuid.uuid4()) 
         page_number = chunk.metadata.get('page')  
@@ -56,7 +57,14 @@ def main(question,file_path,memory):
         )
         # Add chunk to the database with metadata
         db.add_documents([document])
+    
 
+def RAG(question,file_path,memory):
+    chunks=split(load_documents(file_path))
+
+    db=init_db(file_path)
+     
+    add_docs(file_path,chunks)
 
     llm=OllamaLLM(model="llama3")
     
@@ -71,13 +79,12 @@ def main(question,file_path,memory):
     conversation_chain=LLMChain(
                                 llm=llm,
                                 prompt=prompt,
-                                memory=memory,
-                                
-                                
+                                memory=memory,                             
     )
 
     try:
         output=conversation_chain.invoke({"question": question})
+        # print(conversation_chain)
         
         return (f"{output["chat_history"][-1].content } \n\n Sources: {sources}")
         

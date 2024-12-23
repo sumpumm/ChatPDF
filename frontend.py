@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from pypdf import PdfWriter,PdfReader
-from main import main,response_generator
+from my_llm import RAG,response_generator
 from langchain.memory import ConversationBufferMemory
 
 
@@ -64,7 +64,7 @@ if question:
     st.chat_message("user").markdown(question)
     
     
-    response=main(question,file_path,memory)
+    response=RAG(question,file_path,memory)
     
     st.session_state.conversations.append({"role":"assistant","content": response})
     st.chat_message("assistant").write_stream(response_generator(response))
