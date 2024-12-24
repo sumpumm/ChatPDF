@@ -1,7 +1,7 @@
 from fastapi import FastAPI,UploadFile,File
 from pydantic_models import *
 import secrets 
-import psycopg
+from config import db_connection
 
 #initiliaze the api
 app=FastAPI()
@@ -23,7 +23,7 @@ async def upload_pdf_endpoint(file: UploadFile=File(...)):
 @app.get("/chat_history")
 async def chat_history_endpoint(session_id: str):
     try:
-        conn = psycopg.connect("postgresql://postgres:sumpumm@localhost/chat_history")
+        conn = db_connection()
         cursor=conn.cursor()
         cursor.execute("SELECT message FROM message_store WHERE session_id = %s", (session_id,))
         messages=[]
@@ -36,3 +36,4 @@ async def chat_history_endpoint(session_id: str):
         return {"history":messages,"message":"Successful"}        
     except:
         raise Exception("Error connecting to database")
+    
