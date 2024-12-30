@@ -2,11 +2,8 @@ import streamlit as st
 import os
 from pypdf import PdfWriter,PdfReader
 from my_llm import RAG,response_generator
-from langchain.memory import ConversationBufferMemory
+from config import *
 import secrets
-from langchain_community.chat_message_histories import (
-    PostgresChatMessageHistory,
-)
 
 
 
@@ -46,28 +43,13 @@ if uploaded_files:
 
 
 if "session_id" not in st.session_state:
-    st.session_state.session_id=secrets.token_hex(16)
+    st.session_state.session_id=str(secrets.token_hex(16))
     
-
-
-if "postgres_chat" not in st.session_state:
-    st.session_state.postgres_chat=PostgresChatMessageHistory(
-    connection_string="postgresql://postgres:sumpumm@localhost/chat_history",
-    session_id=st.session_state.session_id,)
-
-history=st.session_state.postgres_chat
-         
+    
+    
 if "conversations" not in st.session_state:
     st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
-    history.add_ai_message("Hello, how may I help you today?")
-
-if "chat_memory" not in st.session_state:
-        st.session_state.chat_memory = ConversationBufferMemory(
-            memory_key="chat_history", return_messages=True
-        )
-
-# Access the memory from session state
-memory = st.session_state.chat_memory
+   
 
 for conversation in st.session_state.conversations:
     with st.chat_message(conversation['role']):
@@ -76,18 +58,22 @@ for conversation in st.session_state.conversations:
 question=st.chat_input("Say something")
 
 
+
 if question:
     #this will update the consersation in session state
     st.session_state.conversations.append({"role":"user","content": question})
     st.chat_message("user").markdown(question)
-    history.add_user_message(question)
+ 
     
     
-    response=RAG(question,file_path,memory)
+    response=RAG(question,file_path,st.session_state.session_id)
     
     st.session_state.conversations.append({"role":"assistant","content": response})
     st.chat_message("assistant").write_stream(response_generator(response))
-    history.add_ai_message(response)
+    insert_log(st.session_state.session_id,question,response)
+    
+    
+    
     
     
 

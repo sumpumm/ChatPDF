@@ -26,20 +26,21 @@ Strive to make every interaction meaningful, enjoyable, and informative.
 Special instructions:
 -**If you've already greeted the user in the conversation chain then dont introduce and greet the user again and again.
 
-Use the following context to fetch the required information:
+Based on the given chat history and the latest question of the user which might reference context in the chat history, formulate an answer:
 
     Context: {context}
+    
+    Question: {input}
 
     """
 
     
-def llm_prompt(context):
-    return ChatPromptTemplate(
-        messages=[
-            SystemMessagePromptTemplate.from_template(system_prompt_template.format(context=context)),
-            MessagesPlaceholder(variable_name="chat_history"),
-            HumanMessagePromptTemplate.from_template("{question}")
-        ]
-    )
+def llm_prompt():
+    return ChatPromptTemplate.from_messages([
+        ("system",system_prompt_template),
+        ("system","{context}"),
+        MessagesPlaceholder("chat_history"),
+        ("human","{input}"),
+        ])
 
 

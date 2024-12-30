@@ -7,7 +7,9 @@ from prompt import llm_prompt
 import os,time
 import uuid
 from langchain.docstore.document import Document
-from langchain.chains import LLMChain
+from config import get_chat_history,create_logs
+from langchain.chains import create_history_aware_retriever,create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 
 
 def load_documents(pdf_path):
@@ -58,8 +60,15 @@ def add_docs(file_path,chunks):
         # Add chunk to the database with metadata
         db.add_documents([document])
     
+    
+def doc2str(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
 
-def RAG(question,file_path,memory):
+
+def RAG(question,file_path,session_id):
+    
+    create_logs()
+    
     chunks=split(load_documents(file_path))
 
     db=init_db(file_path)
@@ -68,28 +77,30 @@ def RAG(question,file_path,memory):
 
     llm=OllamaLLM(model="llama3")
     
+    chat_history=get_chat_history(session_id)
     #similarity seach
-    results=db.similarity_search_with_score(question,k=2)
-    context_text = "\n\n---\n\n".join(doc.page_content for doc, _score in results)
-    sources=[doc.metadata for doc,_score in results]
+    # results=db.similarity_search_with_score(question,k=2)
+    # context_text = "\n\n---\n\n".join(doc.page_content for doc, _score in results)
+    # sources=[doc.metadata for doc,_score in results]
 
+    retriever=db.as_retriever(search_kwargs={"k":2})
+    context_text=doc2str(retriever.invoke(question))
+    qa_prompt= llm_prompt()
     
-    prompt= llm_prompt(context_text)
-    
-    conversation_chain=LLMChain(
-                                llm=llm,
-                                prompt=prompt,
-                                memory=memory,                             
-    )
+    history_aware_retriever=create_history_aware_retriever(llm,retriever,qa_prompt)
+
+    qa_chain=create_stuff_documents_chain(llm,qa_prompt)
+    rag_chain=create_retrieval_chain(history_aware_retriever,qa_chain)
 
     try:
-        output=conversation_chain.invoke({"question": question})
+        output=rag_chain.invoke({"chat_history":chat_history,"context":context_text,"input":question,})
         # print(conversation_chain)
         
-        return (f"{output["chat_history"][-1].content } \n\n Sources: {sources}")
+        return (output['answer'])
         
     except Exception as e:
         return(f"Error occurred: {e}")
+      
       
 
 
