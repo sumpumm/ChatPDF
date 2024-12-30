@@ -1,7 +1,7 @@
 from fastapi import FastAPI,UploadFile,File
 from pydantic_models import *
 import secrets 
-from config import db_connection
+from config import db_connection,get_chat_history
 
 #initiliaze the api
 app=FastAPI()
@@ -23,16 +23,7 @@ async def upload_pdf_endpoint(file: UploadFile=File(...)):
 @app.get("/chat_history")
 async def chat_history_endpoint(session_id: str):
     try:
-        conn = db_connection()
-        cursor=conn.cursor()
-        cursor.execute("SELECT message FROM message_store WHERE session_id = %s", (session_id,))
-        messages=[]
-        for row in cursor.fetchall():
-        # print(row,"\n \n")
-            messages.append(
-                    {"role":row[0]["data"]["type"],"content":row[0]["data"]["content"]},
-                        )   
-        conn.close()
+        messages=get_chat_history(session_id)
         return {"history":messages,"message":"Successful"}        
     except:
         raise Exception("Error connecting to database")
