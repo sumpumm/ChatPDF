@@ -65,24 +65,10 @@ def doc2str(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-def RAG(question,file_path,session_id):
-    
-    create_logs()
-    
-    chunks=split(load_documents(file_path))
-
+def get_rag_chain(file_path,question):
     db=init_db(file_path)
-     
-    add_docs(file_path,chunks)
-
     llm=OllamaLLM(model="llama3")
     
-    chat_history=get_chat_history(session_id)
-    #similarity seach
-    # results=db.similarity_search_with_score(question,k=2)
-    # context_text = "\n\n---\n\n".join(doc.page_content for doc, _score in results)
-    # sources=[doc.metadata for doc,_score in results]
-
     retriever=db.as_retriever(search_kwargs={"k":2})
     context_text=doc2str(retriever.invoke(question))
     qa_prompt= llm_prompt()
@@ -90,10 +76,23 @@ def RAG(question,file_path,session_id):
     history_aware_retriever=create_history_aware_retriever(llm,retriever,qa_prompt)
 
     qa_chain=create_stuff_documents_chain(llm,qa_prompt)
-    rag_chain=create_retrieval_chain(history_aware_retriever,qa_chain)
+    return create_retrieval_chain(history_aware_retriever,qa_chain),context_text
+    
+
+def RAG(question,file_path,session_id):
+    
+    create_logs()
+    
+    chunks=split(load_documents(file_path))
+     
+    add_docs(file_path,chunks)
+    
+    chat_history=get_chat_history(session_id)
+
+    rag_chain,context=get_rag_chain(file_path,question)
 
     try:
-        output=rag_chain.invoke({"chat_history":chat_history,"context":context_text,"input":question,})
+        output=rag_chain.invoke({"chat_history":chat_history,"context":context,"input":question,})
         # print(conversation_chain)
         
         return (output['answer'])
