@@ -17,7 +17,12 @@ async def upload_pdf_endpoint(file: UploadFile=File(...)):
         with open(file_path,"wb") as f:
             content= await file.read()
             f.write(content)
-        return {"success":True, "file_path":file_path,"message":"File uploaded successfully"}
+        
+        chunks=split(load_documents(file_path))
+     
+        add_docs(file_path,chunks)
+        
+        return {"success":True, "file_path":file_path, "message":"File uploaded successfully"}
         
     else:
         return {"error":"file must be pdf"}    
@@ -38,10 +43,6 @@ async def chat_endpoint(query_input:Query_input):
     question=query_input.question
     
     create_logs()
-    
-    chunks=split(load_documents(file_path))
-     
-    add_docs(file_path,chunks)
     
     if session_id is None:
         session_id=str(secrets.token_hex(16))

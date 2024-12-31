@@ -83,10 +83,6 @@ def RAG(question,file_path,session_id):
     
     create_logs()
     
-    chunks=split(load_documents(file_path))
-     
-    add_docs(file_path,chunks)
-    
     chat_history=get_chat_history(session_id)
 
     rag_chain,context=get_rag_chain(file_path,question)
@@ -99,10 +95,3 @@ def RAG(question,file_path,session_id):
         
     except Exception as e:
         return(f"Error occurred: {e}")
-      
-      
-
-
-     
-      
-      
