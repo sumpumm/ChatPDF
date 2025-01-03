@@ -1,9 +1,7 @@
 import streamlit as st
-import os
-from pypdf import PdfWriter,PdfReader
-from my_llm import RAG,response_generator,load_documents,split,add_docs
+from my_llm import response_generator
 from config import *
-import secrets
+from api_utils import *
 
 
 st.title("ChatPDF")
@@ -13,48 +11,24 @@ st.sidebar.header("""
                   A platform to interact with your PDF files 
                   """)
 
-
+if "file_path" not in st.session_state:
+    st.session_state.file_path=None
+    
 # WOrking with files
-uploaded_files=st.sidebar.file_uploader("Upload your pdf file here",accept_multiple_files=True,type="pdf")
-save_directory="uploaded_PDFs"
-merged_file_name="merged_output"
-
-with st.spinner("uploading...."):
-    if uploaded_files:
-        if(len(uploaded_files)>1):
-            #logic for multiple files handling
-            writer=PdfWriter()
-            for uploaded_file in uploaded_files:
-                reader=PdfReader(uploaded_file)
-                for page in reader.pages:
-                    writer.add_page(page)
-                merged_file_name+="_"+ uploaded_file.name.split('.')[0]
-            file_path = os.path.join(save_directory, merged_file_name + ".pdf")
-
-            with open(file_path, "wb") as output_file:
-                writer.write(output_file)   
-        else:
-            os.makedirs(save_directory,exist_ok=True) 
-            file_path=os.path.join(save_directory,uploaded_files[0].name)
-            #this saves the file
-            with open(file_path, "wb") as f:
-                f.write(uploaded_files[0].getbuffer())
-        
-        if "docs_state" not in st.session_state:   
-            st.session_state.docs_state=False
-        
-        if st.session_state.docs_state!=True:
-            st.session_state.docs_state=True
-            chunks=split(load_documents(file_path))
-            add_docs(file_path,chunks)
+uploaded_file=st.sidebar.file_uploader("Upload your pdf file here")
+if uploaded_file is not None:
+    if st.sidebar.button("Upload"):
+        with st.spinner("uploading...."):
+            response,st.session_state.file_path=upload_file(uploaded_file)
+            if "success" in response:
+                st.success(response['success'])
+            else:
+                st.error(response['error'])
 
 
 if "session_id" not in st.session_state:
     st.session_state.session_id=None
  
-if st.session_state.session_id is None:
-    st.session_state.session_id=str(secrets.token_hex(16))   
-    
 if "conversations" not in st.session_state:
     st.session_state.conversations=[{"role":"assistant","content":"Hello, how may I help you today?"}]
    
@@ -71,8 +45,11 @@ if question:
     st.chat_message("user").markdown(question)
     
     with st.spinner("Ai is thinking...."):
-        response=RAG(question,file_path,st.session_state.session_id)
-
+        response,session_id = api_response(st.session_state.file_path,question,st.session_state.session_id)
+        st.session_state.session_id=session_id
         st.session_state.conversations.append({"role":"assistant","content": response})
         st.chat_message("assistant").write_stream(response_generator(response))
-        insert_log(st.session_state.session_id,question,response)
+    st.rerun()
+        
+        
+    
