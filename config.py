@@ -58,4 +58,17 @@ def get_chat_history(session_id):
     return messages
     
     
-# print(get_chat_history("15ae3f98f29f99cb8a0bb569a0fda399"))
+def create_users():
+    conn=db_connection()
+    cursor=conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS user 
+                 (id SERIAL PRIMARY KEY,
+                 username TEXT,
+                 password TEXT,
+                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                 
+                 ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
