@@ -25,6 +25,10 @@ if uploaded_file is not None:
             else:
                 st.error(response['error'])
 
+temperature=st.sidebar.slider("Select temperature value",min_value=0.0,max_value=1.0,value=0.8,step=0.1)
+top_k=st.sidebar.slider("top_k value",min_value=2,max_value=5,value=2,step=1)
+
+user_prompt= st.sidebar.text_input("Give prompt")
 
 if "session_id" not in st.session_state:
     st.session_state.session_id=None
@@ -45,7 +49,7 @@ if question:
     st.chat_message("user").markdown(question)
     
     with st.spinner("Ai is thinking...."):
-        response,session_id = api_response(st.session_state.file_path,question,st.session_state.session_id)
+        response,session_id = api_response(st.session_state.file_path,question,st.session_state.session_id,temperature,top_k,user_prompt)
         st.session_state.session_id=session_id
         st.session_state.conversations.append({"role":"assistant","content": response})
         st.chat_message("assistant").write_stream(response_generator(response))

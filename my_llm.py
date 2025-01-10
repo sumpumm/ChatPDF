@@ -63,11 +63,12 @@ def doc2str(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-def get_rag_chain(file_path,question):
+def get_rag_chain(file_path,question,temp,top_k):
+    print(temp)
     db=init_db(file_path)
-    llm=OllamaLLM(model="llama3")
+    llm=OllamaLLM(model="llama3",temperature=temp)
     
-    retriever=db.as_retriever(search_kwargs={"k":2})
+    retriever=db.as_retriever(search_kwargs={"k":top_k})
     context_text=doc2str(retriever.invoke(question))
     qa_prompt= llm_prompt()
     

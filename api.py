@@ -41,6 +41,9 @@ async def chat_endpoint(query_input:Query_input):
     session_id=query_input.session_id
     file_path=query_input.file_path
     question=query_input.question
+    temp=query_input.temperature
+    top_k=query_input.top_k
+    prompt=query_input.prompt
     
     create_logs()
     
@@ -49,12 +52,12 @@ async def chat_endpoint(query_input:Query_input):
         
     chat_history=get_chat_history(session_id)
     
-    rag_chain,context=get_rag_chain(file_path,question)
+    rag_chain,context=get_rag_chain(file_path,question,temp,top_k)
     
     try:
-        output=rag_chain.invoke({"chat_history":chat_history,"context":context,"input":question,})
+        output=rag_chain.invoke({"chat_history":chat_history,"user_prompt":prompt,"context":context,"input":question,})
         response=output['answer']
-        insert_log(session_id,question,response)
+        insert_log(session_id,question,response,temp,top_k,prompt)
         
         return Query_output(response=response,session_id=session_id)
         

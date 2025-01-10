@@ -19,8 +19,8 @@ def upload_file(uploaded_file):
     except Exception as e:
             return {"error": f"An error occurred: {e}"},file_path
         
-def api_response(file_path,user_query,session_id):
-    payload={"file_path":file_path,"question":user_query}
+def api_response(file_path,user_query,session_id,temp,top_k,prompt):
+    payload={"file_path":file_path,"question":user_query,"temperature":temp,"top_k":top_k,"prompt":prompt}
     if session_id:
         payload["session_id"]=session_id
         

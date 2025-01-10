@@ -23,6 +23,9 @@ def create_logs():
                  session_id TEXT,
                  user_query TEXT,
                  response TEXT,
+                 temperature DOUBLE PRECISION,
+                 top_k INTEGER,
+                 prompt TEXT,
                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                      
                  )
@@ -32,10 +35,10 @@ def create_logs():
     cursor.close()
     conn.close()
 
-def insert_log(session_id,user_query,response):
+def insert_log(session_id,user_query,response,temperature,top_k,prompt):
     conn=db_connection()
     cursor=conn.cursor()
-    cursor.execute('INSERT INTO application_logs (session_id,user_query,response) VALUES (%s,%s,%s)',(session_id,user_query,response))
+    cursor.execute('INSERT INTO application_logs (session_id,user_query,response,temperature,top_k,prompt) VALUES (%s,%s,%s,%s,%s,%s)',(session_id,user_query,response,temperature,top_k,prompt))
     conn.commit()
     cursor.close()
     conn.close()
