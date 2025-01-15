@@ -1,7 +1,7 @@
 import psycopg
 
 hostname='localhost'
-database='chat_history'
+database='chat_PDF'
 username='postgres'
 pwd='sumpumm'
 port_id=5432

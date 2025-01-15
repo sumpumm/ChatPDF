@@ -1,7 +1,7 @@
 import streamlit as st
 from my_llm import response_generator
-from config import *
-from api_utils import *
+from database import *
+from api.api_utils import *
 
 
 st.title("ChatPDF")

@@ -5,7 +5,7 @@ from langchain_ollama import OllamaEmbeddings,OllamaLLM
 from prompt import llm_prompt
 import os,time,uuid
 from langchain.docstore.document import Document
-from config import get_chat_history,create_logs
+from database import get_chat_history,create_logs
 from langchain.chains import create_history_aware_retriever,create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 

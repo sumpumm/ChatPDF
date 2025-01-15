@@ -1,13 +1,51 @@
-from fastapi import FastAPI,UploadFile,File
+from fastapi import FastAPI,UploadFile,File,Depends, HTTPException,status
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic_models import *
 import secrets 
-from config import get_chat_history,create_logs,insert_log
+from database import get_chat_history,create_logs,insert_log
 from my_llm import get_rag_chain,split,add_docs,load_documents
-
+from auth.auth_utils import authenticate_user,create_access_token,get_current_user,get_user,get_password_hash
+from auth.user_database import create_user
+from datetime import timedelta
 
 # initiliaze the api
 app=FastAPI()
 
+
+@app.post("/register")
+async def register_user(username: str,email: str,full_name: str, password: str):
+    existing_user_by_username = get_user(username)
+    existing_user_by_email = get_user(email)
+    if existing_user_by_username or existing_user_by_email:
+         raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username or Email already exists"
+        )
+    hashed_password = get_password_hash(password)
+    create_user(
+        username=username,
+        email=email,
+        full_name=full_name,
+        hashed_password=hashed_password,
+    )
+    return {"result": True}
+
+
+@app.post("/token",response_model=Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user=authenticate_user(form_data.username,form_data.password)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect username or password")
+    access_token_expires=timedelta(minutes=2)
+    access_token=create_access_token(
+        data={"sub":user['username']},expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me",response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+ 
 @app.post("/upload")
 async def upload_pdf_endpoint(file: UploadFile=File(...)):
     file_ext=file.filename.split(".").pop()
