@@ -1,6 +1,7 @@
 from pydantic import BaseModel,Field
 from typing import Optional
-  
+
+
 class Chat_history(BaseModel):
     session_id: str
     
@@ -18,11 +19,13 @@ class Query_output(BaseModel):
 
 
 class Token(BaseModel):
-    access_token: str
-    token_type: str
+    access_token: str|None=None
+    session_id:str
+    success: bool =False
 
 
 class User(BaseModel):
+    id: int
     username: str
     email: Optional[str] =None
     full_name: Optional[str] =  None
@@ -31,3 +34,13 @@ class User(BaseModel):
 class UserInDB(User):
     hashed_password: str
     
+
+class RegisterUserRequest(BaseModel):
+    username: str
+    email: str
+    full_name: str
+    password: str
+    
+
+class TokenRevoke(BaseModel):
+    token: str

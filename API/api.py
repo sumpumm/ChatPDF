@@ -1,51 +1,78 @@
-from fastapi import FastAPI,UploadFile,File,Depends, HTTPException,status
+from fastapi import FastAPI,UploadFile,File,Depends
+from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic_models import *
-import secrets 
+import secrets,uuid
 from database import get_chat_history,create_logs,insert_log
 from my_llm import get_rag_chain,split,add_docs,load_documents
-from auth.auth_utils import authenticate_user,create_access_token,get_current_user,get_user,get_password_hash
+from auth.auth_utils import authenticate_user,create_access_token,get_current_user,get_user,get_password_hash,decode_jwt,oauth2_scheme
 from auth.user_database import create_user
 from datetime import timedelta
+from my_redis import add_jti_to_blocklist, token_in_blocklist
 
 # initiliaze the api
 app=FastAPI()
 
 
 @app.post("/register")
-async def register_user(username: str,email: str,full_name: str, password: str):
+async def register_user(request: RegisterUserRequest):
+    username = request.username
+    email = request.email
+    full_name = request.full_name
+    password = request.password
+
     existing_user_by_username = get_user(username)
     existing_user_by_email = get_user(email)
     if existing_user_by_username or existing_user_by_email:
-         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Username or Email already exists"
-        )
+        result=False
+        message = "Username/email already in use"
+        return {"result": result, "message": message}    
     hashed_password = get_password_hash(password)
-    create_user(
+    try:
+        create_user(
         username=username,
         email=email,
         full_name=full_name,
-        hashed_password=hashed_password,
-    )
-    return {"result": True}
+        password=hashed_password,
+        )
+        result=True
+        message="User registered successfully"
+    except Exception as e:
+        result=False
+        message = f"Error occurred: {str(e)}"
+        
+    return {"result": result, "message": message}
 
 
 @app.post("/token",response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user=authenticate_user(form_data.username,form_data.password)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect username or password")
-    access_token_expires=timedelta(minutes=2)
+        return {"access_token": None, "success": False}
+    access_token_expires=timedelta(minutes=15)
+    session_id=str(secrets.token_hex(16))
     access_token=create_access_token(
-        data={"sub":user['username']},expires_delta=access_token_expires
+        data={"jti":str(uuid.uuid4()),"sub":user['username'],"session_id":session_id},expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token,"session_id":session_id ,"success": True}
+
 
 @app.get("/users/me",response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
- 
+
+
+@app.post("/logout")
+async def revoke_token(current_token:TokenRevoke):
+    payload=decode_jwt(current_token.token)
+    jti: str = payload.get("jti")
+    if await token_in_blocklist(jti):
+        return {"response": "Token already revoked"}
+    
+    await add_jti_to_blocklist(jti)
+    return {"response": "Token revoked successfully, You are logged out"}
+
+    
 @app.post("/upload")
 async def upload_pdf_endpoint(file: UploadFile=File(...)):
     file_ext=file.filename.split(".").pop()
@@ -60,13 +87,15 @@ async def upload_pdf_endpoint(file: UploadFile=File(...)):
      
         add_docs(file_path,chunks)
         
-        return {"success":True, "file_path":file_path, "message":"File uploaded successfully"}
+        return {"success":True, "file_path":file_path, "response":"File uploaded successfully"}
         
     else:
         return {"error":"file must be pdf"}    
 
 @app.get("/chat_history")
-async def chat_history_endpoint(session_id: str):
+async def chat_history_endpoint(token:Token = Depends(oauth2_scheme)):
+    payload=decode_jwt(token.access_token)
+    session_id: str=payload.get("session_id")
     try:
         messages=get_chat_history(session_id)
         return {"history":messages,"message":"Successful"}        
@@ -75,7 +104,7 @@ async def chat_history_endpoint(session_id: str):
     
 
 @app.post("/chat",response_model=Query_output)
-async def chat_endpoint(query_input:Query_input):
+async def chat_endpoint(query_input:Query_input,current_token: Token = Depends(oauth2_scheme)):
     session_id=query_input.session_id
     file_path=query_input.file_path
     question=query_input.question
@@ -83,19 +112,19 @@ async def chat_endpoint(query_input:Query_input):
     top_k=query_input.top_k
     prompt=query_input.prompt
     
+    payload=decode_jwt(current_token)
+    user=get_user(payload.get("sub"))
+    user_id=user["id"]
     create_logs()
-    
-    if session_id is None:
-        session_id=str(secrets.token_hex(16))
-        
-    chat_history=get_chat_history(session_id)
+  
+    chat_history=get_chat_history(session_id)   
     
     rag_chain,context=get_rag_chain(file_path,question,temp,top_k)
     
     try:
         output=rag_chain.invoke({"chat_history":chat_history,"user_prompt":prompt,"context":context,"input":question,})
         response=output['answer']
-        insert_log(session_id,question,response,temp,top_k,prompt)
+        insert_log(session_id,user_id,question,response,temp,top_k,prompt)
         
         return Query_output(response=response,session_id=session_id)
         

@@ -21,12 +21,14 @@ def create_logs():
     cursor.execute('''CREATE TABLE IF NOT EXISTS application_logs 
                  (id SERIAL PRIMARY KEY,
                  session_id TEXT,
+                 user_id INT,  
                  user_query TEXT,
                  response TEXT,
                  temperature DOUBLE PRECISION,
                  top_k INTEGER,
                  prompt TEXT,
-                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                 FOREIGN KEY (user_id) REFERENCES users(id)
                      
                  )
                  
@@ -35,10 +37,10 @@ def create_logs():
     cursor.close()
     conn.close()
 
-def insert_log(session_id,user_query,response,temperature,top_k,prompt):
+def insert_log(session_id,user_id,user_query,response,temperature,top_k,prompt):
     conn=db_connection()
     cursor=conn.cursor()
-    cursor.execute('INSERT INTO application_logs (session_id,user_query,response,temperature,top_k,prompt) VALUES (%s,%s,%s,%s,%s,%s)',(session_id,user_query,response,temperature,top_k,prompt))
+    cursor.execute('INSERT INTO application_logs (session_id,user_id,user_query,response,temperature,top_k,prompt) VALUES (%s,%s,%s,%s,%s,%s,%s)',(session_id,user_id,user_query,response,temperature,top_k,prompt))
     conn.commit()
     cursor.close()
     conn.close()
@@ -72,3 +74,4 @@ def create_users():
     conn.commit()
     cursor.close()
     conn.close()
+    

@@ -37,7 +37,7 @@ def get_user(identifier: str):
     user={}
     cursor.execute("SELECT * FROM users WHERE username = %s OR email=%s ", (identifier,identifier,))
     for row in cursor.fetchall():
-        user={"username" :row[1],"email":row[2],"full_name":row[3],"password" :row[4]}
+        user={"id":row[0],"username" :row[1],"email":row[2],"full_name":row[3],"password" :row[4]}
     cursor.close()
     conn.close()
     return user 

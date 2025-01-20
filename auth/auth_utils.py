@@ -12,7 +12,7 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-# ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("TOKEN_EXPIRE_MINUTES")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("TOKEN_EXPIRE_MINUTES")
 pwd_context=CryptContext(schemes=["bcrypt"],deprecated="auto")
 
 
@@ -42,6 +42,11 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp":expire})
     encoded_jwt = jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def decode_jwt(token):
+    payload=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+    return payload
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
