@@ -1,5 +1,4 @@
 from fastapi import FastAPI,UploadFile,File,Depends
-from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic_models import *
 import secrets,uuid
@@ -111,8 +110,11 @@ async def chat_endpoint(query_input:Query_input,current_token: Token = Depends(o
     temp=query_input.temperature
     top_k=query_input.top_k
     prompt=query_input.prompt
-    
-    payload=decode_jwt(current_token)
+    try:
+        payload=decode_jwt(current_token)
+    except Exception as e:
+        error_message=f"Error:{str(e)} Please login again"
+        return Query_output(response=error_message, session_id=None)
     user=get_user(payload.get("sub"))
     user_id=user["id"]
     create_logs()

@@ -17,10 +17,11 @@ def register_ui():
                 response_result,response_message=api_register_user(username,email,full_name,password)
                 if response_result:
                     st.success(response_message)
+                    st.session_state.register_clicked = False
+                    st.rerun()
+                    
                 else:
                     st.error(response_message)
             else:
                 st.error("password doesnt match!")
       
-
-register_ui()

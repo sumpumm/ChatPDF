@@ -15,7 +15,7 @@ class Query_input(BaseModel):
     
 class Query_output(BaseModel):
     response: str
-    session_id: str
+    session_id: str | None
 
 
 class Token(BaseModel):
