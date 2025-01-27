@@ -4,8 +4,8 @@ from pydantic_models import *
 import secrets,uuid
 from database import get_chat_history,create_logs,insert_log
 from my_llm import get_rag_chain,split,add_docs,load_documents
-from auth.auth_utils import authenticate_user,create_access_token,get_current_user,get_user,get_password_hash,decode_jwt,oauth2_scheme
-from auth.user_database import create_user
+from auth.auth_utils import authenticate_user,get_user_token,get_current_user,get_user,get_password_hash,decode_jwt,oauth2_scheme
+from auth.user_database import create_user,get_user
 from datetime import timedelta
 from my_redis import add_jti_to_blocklist, token_in_blocklist
 
@@ -48,13 +48,17 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user=authenticate_user(form_data.username,form_data.password)
     if not user:
         return {"access_token": None, "success": False}
-    access_token_expires=timedelta(minutes=15)
+    user_id=str(get_user(form_data.username)['id'])
     session_id=str(secrets.token_hex(16))
-    access_token=create_access_token(
-        data={"jti":str(uuid.uuid4()),"sub":user['username'],"session_id":session_id},expires_delta=access_token_expires
-    )
-    return {"access_token": access_token,"session_id":session_id ,"success": True}
+    access_token,refresh_token=get_user_token(data={"jti":user_id,"sub":user['username'],"session_id":session_id}) 
+    return {"access_token": access_token,"refresh_token":refresh_token,"session_id":session_id ,"success": True}
 
+
+@app.get("/refresh_token")
+async def refresh_token(token: str):
+    payload=decode_jwt(token)
+    access_token,refresh_token=get_user_token(payload)
+    return {"access_token": access_token,"refresh_token":refresh_token}
 
 @app.get("/users/me",response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):

@@ -20,6 +20,7 @@ class Query_output(BaseModel):
 
 class Token(BaseModel):
     access_token: str|None=None
+    refresh_token: str|None=None
     session_id:str
     success: bool =False
 

@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 from .user_database import get_user,create_user
 from datetime import datetime,timedelta
 from jose import JWTError, jwt
-import os
+import os,uuid,secrets
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
@@ -33,16 +33,31 @@ def authenticate_user(username: str,password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict):
     to_encode=data.copy()
-    if expires_delta:
-        expire=datetime.utcnow()+expires_delta
-    else:
-        expire=datetime.utcnow()+timedelta(minutes=15)
+    expires_delta=timedelta(minutes=15)
+    
+    expire=datetime.utcnow()+expires_delta
     to_encode.update({"exp":expire})
     encoded_jwt = jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
     return encoded_jwt
 
+
+def create_refresh_token(data: dict):
+    return  jwt.encode(data,SECRET_KEY,algorithm=ALGORITHM)
+
+
+def get_user_token(data: dict, refresh_token=None):
+    access_token=create_access_token(data)
+    if not refresh_token:
+        refresh_token=create_refresh_token(data)
+    return access_token,refresh_token
+
+
+def get_refresh_token(token):
+    payload=decode_jwt(token)
+    to_encode={"jti":payload["id"],"sub":payload['username'],"session_id":str(secrets.token_hex(16))}
+    return get_user_token(to_encode,refresh_token=token) 
 
 def decode_jwt(token):
     payload=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
