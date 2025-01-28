@@ -1,18 +1,20 @@
 from fastapi import FastAPI,UploadFile,File,Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic_models import *
-import secrets,uuid
+import secrets
 from database import get_chat_history,create_logs,insert_log
 from my_llm import get_rag_chain,split,add_docs,load_documents
 from auth.auth_utils import authenticate_user,get_user_token,get_current_user,get_user,get_password_hash,decode_jwt,oauth2_scheme
 from auth.user_database import create_user,get_user
-from datetime import timedelta
 from my_redis import add_jti_to_blocklist, token_in_blocklist
+from middleware import logger,register_middleware
 
 # initiliaze the api
 app=FastAPI()
+logger.info('Starting API....')
 
-
+register_middleware(app)
+    
 @app.post("/register")
 async def register_user(request: RegisterUserRequest):
     username = request.username

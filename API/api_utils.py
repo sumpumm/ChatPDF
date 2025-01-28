@@ -3,7 +3,7 @@ import requests
 def upload_file(uploaded_file):
     file_path=None
     response = requests.post(
-                "http://127.0.0.1:8000/upload",
+                "http://127.0.0.1:5000/upload",
                 files={"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)},
             )
     response_data=response.json()
@@ -24,7 +24,7 @@ def api_response(token,file_path,user_query,session_id,temp,top_k,prompt):
     headers = {
     "Authorization": f"Bearer {token}"
     } 
-    response=requests.post("http://127.0.0.1:8000/chat",headers=headers,json=payload)
+    response=requests.post("http://127.0.0.1:5000/chat",headers=headers,json=payload)
     
     if response.status_code == 200:
         try:
@@ -49,7 +49,7 @@ def api_register_user(username, email, full_name, password):
              "full_name":full_name,
              "password":password
              }
-    response=requests.post("http://127.0.0.1:8000/register",json=payload)
+    response=requests.post("http://127.0.0.1:5000/register",json=payload)
     
     if response.status_code==200:
         try:
@@ -69,7 +69,7 @@ def api_register_user(username, email, full_name, password):
 
 def api_user_login(username,password):
     payload={"username":username,"password":password}
-    response=requests.post("http://127.0.0.1:8000/token",data=payload)
+    response=requests.post("http://127.0.0.1:5000/token",data=payload)
     
     if response.status_code==200:
         response_data=response.json()
@@ -84,7 +84,7 @@ def api_user_login(username,password):
 
 def api_user_logout(token: str):
     payload={"token":token}
-    response=requests.post("http://127.0.0.1:8000/logout",json=payload)
+    response=requests.post("http://127.0.0.1:5000/logout",json=payload)
     
     if response.status_code == 200:
         try:

@@ -32,11 +32,8 @@ def chat(token: str, session_id: str):
     top_k = st.sidebar.slider("Top K value", 2, 5, 2, 1)
     user_prompt = st.sidebar.text_input("Give prompt")
 
-    
-    if "conversations" not in st.session_state:
-        st.session_state.conversations = [{"role": "assistant", "content": "Hello, how may I help you today?"}]
 
-    for conversation in st.session_state.conversations:
+    for conversation in st.session_state.conversations: 
         with st.chat_message(conversation['role']):
             st.markdown(conversation['content'])
 

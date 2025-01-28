@@ -10,6 +10,9 @@ if "token" not in st.session_state:
 if "session_id" not in st.session_state:
     st.session_state.session_id = None
 
+if "conversations" not in st.session_state:
+    st.session_state.conversations = [{"role": "assistant", "content": "Hello, how may I help you today?"}]
+
 if "loggedin" not in st.session_state:
     st.session_state.loggedin = False
 
@@ -25,6 +28,7 @@ if st.session_state.logout_clicked:
     st.session_state.session_id = None
     st.session_state.loggedin = False
     st.session_state.logout_clicked = False
+    st.session_state.conversations = [{"role": "assistant", "content": "Hello, how may I help you today?"}]
     st.rerun() 
 
 if st.session_state.register_clicked:
