@@ -14,7 +14,11 @@ app=FastAPI()
 logger.info('Starting API....')
 
 register_middleware(app)
-    
+ 
+@app.get("/test")
+async def test():
+    return {"message" : "working"} 
+   
 @app.post("/register")
 async def register_user(request: RegisterUserRequest):
     username = request.username

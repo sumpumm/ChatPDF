@@ -87,7 +87,6 @@ def RAG(question,file_path,session_id):
 
     try:
         output=rag_chain.invoke({"chat_history":chat_history,"context":context,"input":question,})
-        # print(conversation_chain)
         
         return (output['answer'])
         

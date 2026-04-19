@@ -32,7 +32,7 @@ def register_middleware(app:FastAPI):
         logger.info(log_dict)
         return response
 
-    origins=["http://localhost:8051"]    
+    origins=["http://localhost:8080"]    
     
     app.add_middleware(
     CORSMiddleware,

@@ -39,6 +39,8 @@ Based on the given chat history and the latest question of the user which might 
     Context: {context}
     
     Question: {input}
+    
+    Output: 
 """
 
     
